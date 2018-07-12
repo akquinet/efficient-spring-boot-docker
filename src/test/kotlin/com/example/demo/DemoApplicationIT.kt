@@ -1,6 +1,7 @@
 package com.example.demo
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.springframework.boot.web.client.RestTemplateBuilder
@@ -15,6 +16,13 @@ class DemoApplicationIT {
     var appContainer = KGenericContainer("spring-docker-demo:latest")
             .waitingFor(Wait.forListeningPort())
             .withExposedPorts(8080)
+            .withFileSystemBind("./target/jacoco-agent", "/jacoco-agent")
+            .withFileSystemBind("./target/jacoco-report", "/jacoco-report")
+            .withCommand("/usr/bin/java",
+                    "-javaagent:/jacoco-agent/org.jacoco.agent-runtime.jar=destfile=/jacoco-report/jacoco-it.exec",
+                    "-jar",
+                    "/app.jar"
+            )
 
 
     val client: RestTemplate = RestTemplateBuilder().build()
@@ -27,6 +35,11 @@ class DemoApplicationIT {
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isEqualTo("pong")
+    }
+
+    @After
+    fun stopContainerGracefully() {
+        appContainer.dockerClient.stopContainerCmd(appContainer.containerId).withTimeout(10).exec()
     }
 
 }

@@ -16,6 +16,8 @@ fun main(args: Array<String>) {
 class RoutingConfiguration {
 
     @GetMapping("/ping")
-    fun routerFunction(): String = "pong"
+    fun ping(): String = "pong"
 
+    @GetMapping("/unused")
+    fun unused(): String = "pong"
 }
