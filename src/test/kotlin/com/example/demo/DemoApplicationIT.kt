@@ -1,36 +1,37 @@
 package com.example.demo
 
+import com.palantir.docker.compose.DockerComposeRule
+import com.palantir.docker.compose.connection.waiting.HealthChecks
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Rule
+import org.junit.ClassRule
 import org.junit.Test
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.web.client.RestTemplate
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.wait.strategy.Wait
+
 
 class DemoApplicationIT {
 
-    @get:Rule
-    var appContainer = KGenericContainer("spring-docker-demo:latest")
-            .waitingFor(Wait.forListeningPort())
-            .withExposedPorts(8080)
+    companion object {
 
+        @ClassRule
+        @JvmField
+        var docker: DockerComposeRule = DockerComposeRule.builder()
+                .file("docker-compose.yml")
+                .waitingForService("app", HealthChecks.toRespondOverHttp(8080) { "http://localhost:${it.externalPort}/ping" })
+                .saveLogsTo("target/app-logs")
+                .build()
+    }
 
     val client: RestTemplate = RestTemplateBuilder().build()
 
     @Test
     fun `can call ping`() {
-        val url = "http://localhost:${appContainer.getMappedPort(8080)}/ping"
+        val url = "http://localhost:${docker.containers().container("app").port(8080).externalPort}/ping"
 
         val response = client.getForEntity(url, String::class.java)
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isEqualTo("pong")
     }
-
 }
-
-// workaround for Kotlin and testcontainers
-// https://github.com/testcontainers/testcontainers-java/issues/318
-class KGenericContainer(imageName: String) : GenericContainer<KGenericContainer>(imageName)
