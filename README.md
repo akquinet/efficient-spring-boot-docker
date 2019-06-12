@@ -2,6 +2,7 @@
 # Efficient docker images for Spring Boot applications
 
 Blog post: [https://blog.akquinet.de/?p=9458](https://blog.akquinet.de/?p=9458)
+including a short documentation about how to build this app.
 
 # Test coverage for containerized java apps
 
